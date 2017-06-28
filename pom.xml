@@ -1,246 +1,280 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	     <groupId>ch.ergon.deeplearning4j</groupId>
-	     <artifactId>dl4j-magic</artifactId>
-	     <version>0.1-SNAPSHOT</version>
-	     <modelVersion>4.0.0</modelVersion>
-	     <packaging>pom</packaging>
-
-<!--    <parent>
-        <groupId>org.deeplearning4j</groupId>
-        <artifactId>deeplearning4j-examples-parent</artifactId>
-        <version>0.8-SNAPSHOT</version>
-    </parent>
--->
-    <name>DeepLearning4j Magic Gathering</name>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>ch.ergon.ml</groupId>
+	<artifactId>dl4j-magic</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
 
 
-    <properties>
-        <!-- Change the nd4j.backend property to nd4j-cuda-7.5-platform or nd4j-cuda-8.0-platform to use CUDA GPUs -->
-        <nd4j.backend>nd4j-native-platform</nd4j.backend>
-        <!-- <nd4j.backend>nd4j-cuda-8.0-platform</nd4j.backend> -->
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <shadedClassifier>bin</shadedClassifier>
+	<packaging>jar</packaging>
+
+	<name>deeplearning-bt</name>
+	<url>http://maven.apache.org</url>
+
+	<properties>
+
+		<!-- Change the nd4j.backend property to nd4j-cuda-7.5-platform or nd4j-cuda-8.0-platform 
+			to use CUDA GPUs -->
+		<nd4j.backend>nd4j-native-platform</nd4j.backend>
+		<!-- <nd4j.backend>nd4j-cuda-8.0-platform</nd4j.backend> -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<shadedClassifier>bin</shadedClassifier>
 
 
-        <java.version>1.8</java.version>
-          <nd4j.version>0.8.0</nd4j.version>
-        <dl4j.version>0.8.0</dl4j.version>
-        <datavec.version>0.8.0</datavec.version>
-        <arbiter.version>0.8.0</arbiter.version>
-        <rl4j.version>0.8.0</rl4j.version>
+		<java.version>1.8</java.version>
+		<nd4j.version>0.8.0</nd4j.version>
+		<dl4j.version>0.8.0</dl4j.version>
+		<datavec.version>0.8.0</datavec.version>
+		<arbiter.version>0.8.0</arbiter.version>
+		<rl4j.version>0.8.0</rl4j.version>
+		<jackson.version>2.6.6</jackson.version>
 
-        <!-- For Spark examples: change the _1 to _2 to switch between Spark 1 and Spark 2 -->
-        <dl4j.spark.version>0.8.0_spark_1</dl4j.spark.version>
-        <datavec.spark.version>0.8.0_spark_1</datavec.spark.version>
-
-        <!-- Scala binary version: DL4J's Spark and UI functionality are released with both Scala 2.10 and 2.11 support -->
-        <scala.binary.version>2.11</scala.binary.version>
-
-        <guava.version>19.0</guava.version>
-        <logback.version>1.1.7</logback.version>
-        <jfreechart.version>1.0.13</jfreechart.version>
-        <jcommon.version>1.0.23</jcommon.version>
-        <maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
-        <exec-maven-plugin.version>1.4.0</exec-maven-plugin.version>
-        <maven.minimum.version>3.3.1</maven.minimum.version>
-        <javafx.version>2.2.3</javafx.version>
-        <javafx.runtime.lib.jar>${env.JAVAFX_HOME}/jfxrt.jar</javafx.runtime.lib.jar>
-        <aws.sdk.version>1.11.109</aws.sdk.version>
-        <jackson.version>2.6.6</jackson.version>
-    </properties>
+		<jfreechart.version>1.0.13</jfreechart.version>
+		<jcommon.version>1.0.23</jcommon.version>
 
 
-    <repositories>
-        <repository>
-            <id>snapshots-repo</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
+		<!-- For Spark examples: change the _1 to _2 to switch between Spark 1 
+			and Spark 2 -->
+		<dl4j.spark.version>0.8.0_spark_1</dl4j.spark.version>
+		<datavec.spark.version>0.8.0_spark_1</datavec.spark.version>
 
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus snapshot repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>nexus-releases</id>
-            <name>Nexus Release Repository</name>
-            <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>nd4j-native-platform</artifactId>
-                <version>${nd4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>nd4j-cuda-7.5-platform</artifactId>
-                <version>${nd4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>nd4j-cuda-8.0-platform</artifactId>
-                <version>${nd4j.version}</version>
-            </dependency>
-       </dependencies>
-    </dependencyManagement>
 
-    <dependencies>
-        <!-- ND4J backend. You need one in every DL4J project. Normally define artifactId as either "nd4j-native-platform" or "nd4j-cuda-7.5-platform" -->
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>${nd4j.backend}</artifactId>
-        </dependency>
+		<canova.version>0.0.0.17</canova.version>
 
-        <!-- Core DL4J functionality -->
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-core</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
+	</properties>
+	<!-- Platform-dependent backend selection (netlib is default) -->
+	<profiles>
+		<profile>
+			<id>cuda</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.nd4j</groupId>
+					<artifactId>nd4j-jcublas-${cuda.version}</artifactId>
+					<version>${nd4j.version}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>netlib</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.nd4j</groupId>
+					<artifactId>nd4j-native</artifactId>
+					<version>${nd4j.version}</version>
+				</dependency>
+			</dependencies>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+		</profile>
+	</profiles>
+	<!-- end platform-dependent backend selection -->
 
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-nlp</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.nd4j</groupId>
+				<artifactId>nd4j-native-platform</artifactId>
+				<version>${nd4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.nd4j</groupId>
+				<artifactId>nd4j-cuda-7.5-platform</artifactId>
+				<version>${nd4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.nd4j</groupId>
+				<artifactId>nd4j-cuda-8.0-platform</artifactId>
+				<version>${nd4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.nd4j</groupId>
+				<artifactId>nd4j-jblas</artifactId>
+				<version>${nd4j.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.deeplearning4j</groupId>
+				<artifactId>deeplearning4j-core</artifactId>
+				<version>${dl4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.deeplearning4j</groupId>
+				<artifactId>deeplearning4j-ui</artifactId>
+				<version>${dl4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.deeplearning4j</groupId>
+				<artifactId>deeplearning4j-scaleout-api</artifactId>
+				<version>${dl4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.deeplearning4j</groupId>
+				<artifactId>deeplearning4j-scaleout-akka</artifactId>
+				<version>${dl4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.deeplearning4j</groupId>
+				<artifactId>deeplearning4j-scaleout-zookeeper</artifactId>
+				<version>${dl4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.deeplearning4j</groupId>
+				<artifactId>deeplearning4j-nlp</artifactId>
+				<version>${dl4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.deeplearning4j</groupId>
+				<artifactId>deeplearning4j-aws</artifactId>
+				<version>${dl4j.version}</version>
+			</dependency>
+			<!-- end dl4j dependencies -->
 
-        <!-- deeplearning4j-ui is used for HistogramIterationListener + visualization: see http://deeplearning4j.org/visualization -->
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-ui_${scala.binary.version}</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
+			<!-- nd4j dependencies -->
+			<dependency>
+				<groupId>org.nd4j</groupId>
+				<artifactId>canova-nd4j-image</artifactId>
+				<version>${canova.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.nd4j</groupId>
+				<artifactId>canova-nd4j-codec</artifactId>
+				<version>${canova.version}</version>
+			</dependency>
+			<!-- end nd4j dependencies -->
 
-        <!-- Force guava versions for using UI/HistogramIterationListener -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.dataformat</groupId>
+				<artifactId>jackson-dataformat-yaml</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
 
-        <!-- datavec-data-codec: used only in video example for loading video data -->
-        <dependency>
-            <artifactId>datavec-data-codec</artifactId>
-            <groupId>org.datavec</groupId>
-            <version>${datavec.version}</version>
-        </dependency>
+			<dependency>
+				<groupId>net.java.openjfx.backport</groupId>
+				<artifactId>openjfx-78-backport</artifactId>
+				<version>1.8.0-ea-b96.1</version>
+			</dependency>
 
-        <!-- Used in the feedforward/classification/MLP* and feedforward/regression/RegressionMathFunctions example -->
-        <dependency>
-            <groupId>jfree</groupId>
-            <artifactId>jfreechart</artifactId>
-            <version>${jfreechart.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jfree</groupId>
-            <artifactId>jcommon</artifactId>
-            <version>${jcommon.version}</version>
-        </dependency>
 
-        <!-- Used for downloading data in some of the examples -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.3.5</version>
-        </dependency>
+			<!-- <dependency> -->
+			<!-- <groupId>org.slf4j</groupId> -->
+			<!-- <artifactId>slf4j-log4j12</artifactId> -->
+			<!-- <version>1.7.13</version> -->
+			<!-- </dependency> -->
 
-    </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>${exec-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <executable>java</executable>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>${maven-shade-plugin.version}</version>
-                <configuration>
-                    <shadedArtifactAttached>true</shadedArtifactAttached>
-                    <shadedClassifierName>${shadedClassifier}</shadedClassifierName>
-                    <createDependencyReducedPom>true</createDependencyReducedPom>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>org/datanucleus/**</exclude>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                                <exclude>META-INF/*.RSA</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                                    <resource>reference.conf</resource>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+			<dependency>
+				<groupId>org.apache.maven.reporting</groupId>
+				<artifactId>maven-reporting-api</artifactId>
+				<version>2.2.1</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	<dependencies>
+		<dependency>
+			<groupId>org.deeplearning4j</groupId>
+			<artifactId>deeplearning4j-ui</artifactId>
+			<version>0.6.0</version>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.5.1</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>log4j-over-slf4j</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.deeplearning4j</groupId>
+			<artifactId>deeplearning4j-nlp</artifactId>
+			<version>${dl4j.version}</version>
 
-    <profiles>
-      <profile>
-        <id>OpenJFX</id>
-        <dependencies>
-          <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>javafx</artifactId>
-            <version>${javafx.version}</version>
-          </dependency>
-        </dependencies>
-      </profile>
-    </profiles>
+		</dependency>
+		<dependency>
+			<groupId>org.deeplearning4j</groupId>
+			<artifactId>deeplearning4j-core</artifactId>
+			<version>${dl4j.version}</version>
 
+		</dependency>
+		<!-- <dependency> <artifactId>canova-nd4j-image</artifactId> <groupId>org.nd4j</groupId> 
+			<version>${canova.version}</version> </dependency> -->
+		<!-- https://mvnrepository.com/artifact/org.datavec/datavec-api -->
+		<dependency>
+			<groupId>org.datavec</groupId>
+			<artifactId>datavec-api</artifactId>
+			<version>0.8.0</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.datavec/datavec-spark_2.11 -->
+		<dependency>
+			<groupId>org.datavec</groupId>
+			<artifactId>datavec-spark_2.11</artifactId>
+			<version>0.8.0_spark_1</version>
+		</dependency>
+		<dependency>
+			<groupId>jfree</groupId>
+			<artifactId>jfreechart</artifactId>
+			<version>${jfreechart.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jfree</groupId>
+			<artifactId>jcommon</artifactId>
+			<version>${jcommon.version}</version>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>1.6</version>
+				<configuration>
+					<createDependencyReducedPom>true</createDependencyReducedPom>
+					<filters>
+						<filter>
+							<artifact>*:*</artifact>
+							<excludes>
+								<exclude>org/datanucleus/**</exclude>
+								<exclude>META-INF/*.SF</exclude>
+								<exclude>META-INF/*.DSA</exclude>
+								<exclude>META-INF/*.RSA</exclude>
+							</excludes>
+						</filter>
+					</filters>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<transformers>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+									<resource>reference.conf</resource>
+								</transformer>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
