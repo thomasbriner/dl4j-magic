@@ -34,7 +34,7 @@ import java.io.File;
  * @author Alex Black (added plots)
  *
  */
-public class MLPClassifierLinear {
+public class MLPClassifierLinear  {
 
 
     public static void main(String[] args) throws Exception {
