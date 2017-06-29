@@ -157,12 +157,13 @@ public class MagicCardClassification {
 		// Train with transformations
 
 		log.info("Evaluate model....");
-		recordReader.initialize(testData);
+		recordReader.initialize(testData, resizeTransform);
 		dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
 		scaler.fit(dataIter);
 		dataIter.setPreProcessor(scaler);
 		Evaluation eval = network.evaluate(dataIter);
 		log.info(eval.stats(true));
+		log.info("\n" + eval.confusionToString());
 
 		// Example on how to get predict results with trained model
 		dataIter.reset();
