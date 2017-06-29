@@ -90,7 +90,7 @@ public class MagicCardClassification {
 		 * limit size and balance batch content
 		 **/
 		ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
-		File mainPath = new File(System.getProperty("user.dir"), "src/main/resources/animals/");
+		File mainPath = new File(System.getProperty("user.dir"), "src/main/resources/magic_cards/");
 		FileSplit fileSplit = new FileSplit(mainPath, NativeImageLoader.ALLOWED_FORMATS, rng);
 		BalancedPathFilter pathFilter = new BalancedPathFilter(rng, labelMaker, numExamples, numLabels, batchSize);
 
@@ -98,9 +98,19 @@ public class MagicCardClassification {
 		 * Data Setup -> train test split - inputSplit = define train and test
 		 * split
 		 **/
+		nCores = 4;
+		epochs = 100;
+		splitTrainTest = 0.99;
 		InputSplit[] inputSplit = fileSplit.sample(pathFilter, splitTrainTest, 1 - splitTrainTest);
 		InputSplit trainData = inputSplit[0];
 		InputSplit testData = inputSplit[1];
+		
+		numLabels = 13;
+		fileSplit = new FileSplit(new File(mainPath, "train"), NativeImageLoader.ALLOWED_FORMATS, rng);
+		trainData = fileSplit.sample(pathFilter, splitTrainTest, 1 - splitTrainTest)[0];
+		fileSplit = new FileSplit(new File(mainPath, "test"), NativeImageLoader.ALLOWED_FORMATS, rng);
+		testData = fileSplit.sample(pathFilter, splitTrainTest, 1 - splitTrainTest)[0];
+		
 
 		/**
 		 * Data Setup -> transformation - Transform = how to tranform images and
