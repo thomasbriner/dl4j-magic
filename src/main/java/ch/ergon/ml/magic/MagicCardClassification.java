@@ -148,8 +148,8 @@ public class MagicCardClassification {
 		recordReader.initialize(trainData, resizeTransform);
 		dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
 		
-		scaler.fit(dataIter);
-		dataIter.setPreProcessor(scaler);
+		//scaler.fit(dataIter);
+		//dataIter.setPreProcessor(scaler);
 		trainIter = new MultipleEpochsIterator(epochs, dataIter, nCores);
 		network.fit(trainIter);
 
@@ -158,8 +158,8 @@ public class MagicCardClassification {
 		log.info("Evaluate model....");
 		recordReader.initialize(testData, resizeTransform);
 		dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
-		scaler.fit(dataIter);
-		dataIter.setPreProcessor(scaler);
+		//scaler.fit(dataIter);
+		//dataIter.setPreProcessor(scaler);
 		Evaluation eval = network.evaluate(dataIter);
 		log.info(eval.stats(true));
 		log.info("\n" + eval.confusionToString());
