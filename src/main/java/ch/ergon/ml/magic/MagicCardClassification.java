@@ -164,7 +164,10 @@ public class MagicCardClassification {
 		Evaluation eval = network.evaluate(dataIter);
 		log.info(eval.stats(true));
 		log.info("\n" + eval.confusionToString());
-
+		
+		dataIter.reset();
+		log.info(network.output(dataIter).toString());
+		
 		// Example on how to get predict results with trained model
 		dataIter.reset();
 		DataSet testDataSet = dataIter.next();
