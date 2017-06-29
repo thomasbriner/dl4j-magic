@@ -101,16 +101,14 @@ public class MagicCardClassification {
 		 **/
 		nCores = 4;
 		epochs = 100;
-		splitTrainTest = 0.99;
-		InputSplit[] inputSplit = fileSplit.sample(pathFilter, splitTrainTest, 1 - splitTrainTest);
-		InputSplit trainData = inputSplit[0];
-		InputSplit testData = inputSplit[1];
-		
+//		InputSplit[] inputSplit = fileSplit.sample(pathFilter, splitTrainTest, 1 - splitTrainTest);
+//		InputSplit trainData = inputSplit[0];
+//		InputSplit testData = inputSplit[1];
+//		
 		numLabels = 13;
-		fileSplit = new FileSplit(new File(mainPath, "train"), NativeImageLoader.ALLOWED_FORMATS, rng);
-		trainData = fileSplit.sample(pathFilter, splitTrainTest, 1 - splitTrainTest)[0];
-		fileSplit = new FileSplit(new File(mainPath, "test"), NativeImageLoader.ALLOWED_FORMATS, rng);
-		testData = fileSplit.sample(pathFilter, splitTrainTest, 1 - splitTrainTest)[0];
+		//fileSplit = new FileSplit(new File(mainPath, "train"), NativeImageLoader.ALLOWED_FORMATS);
+		InputSplit trainData = new FileSplit(new File(mainPath, "train"), NativeImageLoader.ALLOWED_FORMATS, rng);
+		InputSplit testData = new FileSplit(new File(mainPath, "test"), NativeImageLoader.ALLOWED_FORMATS);
 		
 
 		/**
