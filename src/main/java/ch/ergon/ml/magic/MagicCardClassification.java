@@ -1,6 +1,7 @@
 package ch.ergon.ml.magic;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -166,6 +167,7 @@ public class MagicCardClassification {
 		log.info("\n" + eval.confusionToString());
 		
 		dataIter.reset();
+		log.info(Arrays.toString(testData.locations()));
 		log.info(network.output(dataIter).toString());
 		
 		// Example on how to get predict results with trained model
