@@ -1,9 +1,13 @@
 package ch.ergon.ml.magic;
+import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2YCrCb;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.io.FilenameUtils;
@@ -12,6 +16,12 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.recordreader.ImageRecordReader;
+import org.datavec.image.transform.ColorConversionTransform;
+import org.datavec.image.transform.EqualizeHistTransform;
+import org.datavec.image.transform.FlipImageTransform;
+import org.datavec.image.transform.ImageTransform;
+import org.datavec.image.transform.RotateImageTransform;
+import org.datavec.image.transform.WarpImageTransform;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -32,6 +42,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.PerformanceListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.activations.Activation;
@@ -105,7 +116,8 @@ public class MagicCardClassificationThoemel {
 		// InputSplit trainData = inputSplit[0];
 		// InputSplit testData = inputSplit[1];
 		//
-		numLabels = 13;
+//		numLabels = 13;
+		numLabels = 3586;
 		// fileSplit = new FileSplit(new File(mainPath, "train"),
 		// NativeImageLoader.ALLOWED_FORMATS);
 		InputSplit trainData = new FileSplit(new File(mainPath, "train"), NativeImageLoader.ALLOWED_FORMATS, rng);
@@ -117,6 +129,8 @@ public class MagicCardClassificationThoemel {
 		 **/
 		// ImageTransform resizeTransform = new ResizeImageTransform(height,
 		// width);
+		
+//		ImageTransform multi = new MultiImageTransform( showImage);
 
 		/**
 		 * Data Setup -> normalization - how to normalize images and generate
@@ -130,7 +144,7 @@ public class MagicCardClassificationThoemel {
 		// MultiLayerNetwork network = alexnetModel();
 
 		network.init();
-		network.setListeners(new ScoreIterationListener(listenerFreq));
+		network.setListeners(new ScoreIterationListener(listenerFreq), new PerformanceListener(10));
 
 		/**
 		 * Data Setup -> define how to load data into net: - recordReader = the
@@ -151,6 +165,8 @@ public class MagicCardClassificationThoemel {
 		recordReader.initialize(trainData);
 		dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
 
+
+		
 		// scaler.fit(dataIter);
 		dataIter.setPreProcessor(scaler);
 		trainIter = new MultipleEpochsIterator(epochs, dataIter, nCores);
@@ -160,6 +176,40 @@ public class MagicCardClassificationThoemel {
 		} else {
 			log.info("Train model....");
 			network.fit(trainIter);
+
+	        ImageTransform flipTransform1 = new FlipImageTransform(rng);
+	        ImageTransform flipTransform2 = new FlipImageTransform(new Random(123));
+	        ImageTransform warpTransform = new WarpImageTransform(rng, 42);
+	        ImageTransform colorTransform = new ColorConversionTransform(new Random(seed), COLOR_BGR2YCrCb);
+
+//			ImageTransform showImage = new ShowImageTransform("sali", 0);
+			ImageTransform flipImage1 = new FlipImageTransform(0);
+			ImageTransform flipImage2 = new FlipImageTransform(-1);
+			ImageTransform flipImage3 = new FlipImageTransform(1);
+			ImageTransform equalizeHist = new EqualizeHistTransform();
+//			ImageTransform colorTransform = new ColorConversionTransform(new Random(seed), 50);
+//			ImageTransform multi = new MultiImageTransform(equalizeHist, showImage);
+			
+			
+			List<ImageTransform> transforms = new ArrayList<>();
+			for (Integer i : new Integer[]{1,2,3,5,6,7}) {
+				transforms.add(new RotateImageTransform(new Float(i*45)));
+				
+			}
+			transforms.addAll(Arrays.asList(new ImageTransform[]{flipImage1, flipImage2, flipImage3, equalizeHist}));
+
+	        // Train with transformations
+	        for (ImageTransform transform : transforms) {
+	            System.out.print("\nTraining on transformation: " + transform.getClass().toString() + "\n\n");
+	            recordReader.initialize(trainData, transform);
+	            dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
+	            scaler.fit(dataIter);
+	            dataIter.setPreProcessor(scaler);
+	            trainIter = new MultipleEpochsIterator(epochs, dataIter, nCores);
+	            network.fit(trainIter);
+	        }
+
+			
 			if (save) {
 				log.info("Save model....");
 				ModelSerializer.writeModel(network, basePath + "model.bin", true);
@@ -176,35 +226,20 @@ public class MagicCardClassificationThoemel {
 		log.info("\n" + eval.confusionToString());
 
 		dataIter.reset();
-		DecimalFormat df = new DecimalFormat("0.000"); 
+		DecimalFormat df = new DecimalFormat("0.000");
 		INDArray output = network.output(dataIter);
 		for (int i = 0; i < output.size(0); i++) {
 			URI uri = testData.locations()[i];
 			String fileName = uri.getPath().substring(uri.getPath().lastIndexOf(File.separator) + 1);
 			log.info("*****************");
 			log.info(fileName);
+			log.info("*****************");
 			INDArray row = output.getRow(i);
 			for (int j = 0; j < row.size(1); j++) {
-				log.info(dataIter.getLabels().get(j) + ": " + df.format(row.getDouble(j)));
+				log.info("\t" + dataIter.getLabels().get(j) + ": " + df.format(row.getDouble(j)));
 			}
 		}
-		// log.info(Arrays.asList(testData.locations()).stream()
-		// .map(uri ->
-		// uri.getPath().substring(uri.getPath().lastIndexOf(File.separator)))
-		// .collect(Collectors.toList()).toString());
-		// log.info(network.output(dataIter).toString());
 
-		// // Example on how to get predict results with trained model
-		// dataIter.reset();
-		// DataSet testDataSet = dataIter.next();
-		// String expectedResult = testDataSet.getLabelName(0);
-		// List<String> predict = network.predict(testDataSet);
-		// String modelResult = predict.get(0);
-		// System.out.print("\nFor a single example that is labeled " +
-		// expectedResult + " the model predicted "
-		// + modelResult + "\n\n");
-
-		log.info("****************Example finished********************");
 	}
 
 	private MultiLayerNetwork loadFromFile(File storedModel) throws IOException {
