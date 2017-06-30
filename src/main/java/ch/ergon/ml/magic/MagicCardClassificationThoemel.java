@@ -1,14 +1,11 @@
 package ch.ergon.ml.magic;
 
-import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2YCrCb;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -16,15 +13,15 @@ import java.util.Random;
 
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
+import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.Writable;
+import org.datavec.common.RecordConverter;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.recordreader.ImageRecordReader;
-import org.datavec.image.transform.ColorConversionTransform;
-import org.datavec.image.transform.EqualizeHistTransform;
-import org.datavec.image.transform.FlipImageTransform;
 import org.datavec.image.transform.ImageTransform;
-import org.datavec.image.transform.RotateImageTransform;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -54,6 +51,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,18 +83,24 @@ public class MagicCardClassificationThoemel {
 	protected static int width = 100;
 	protected static int channels = 3;
 	protected static int numExamples = 80;
-	protected static int numLabels = 10;
 	protected static int batchSize = 20;
 
 	protected static long seed = 42;
 	protected static Random rng = new Random(seed);
 	protected static int listenerFreq = 1;
 	protected static int iterations = 1;
-	protected static int epochs = 5;
 	protected static double splitTrainTest = 0.8;
-	protected static int nCores = 2;
 	protected static boolean persistFinalModel = true;
-	protected static boolean persistIntermediateModels = true;
+	protected static boolean persistIntermediateModels = false;
+	
+	protected static int nCores = 4;
+	protected static int numLabels = 13;
+	protected static int epochs = 100;
+	private static final Network algo = Network.DNN;
+	
+	private enum Network {
+		DNN, LENET, ALEXNET
+	}
 
 	public void run(String[] args) throws Exception {
 
@@ -119,11 +123,7 @@ public class MagicCardClassificationThoemel {
 		 * Data Setup -> train test split - inputSplit = define train and test
 		 * split
 		 **/
-		nCores = 4;
-		epochs = 3;
 
-		// numLabels = 13;
-		numLabels = 3586;
 		InputSplit trainData = new FileSplit(new File(mainPath, "train"), NativeImageLoader.ALLOWED_FORMATS, rng);
 		InputSplit testData = new FileSplit(new File(mainPath, "test"), NativeImageLoader.ALLOWED_FORMATS);
 
@@ -137,8 +137,27 @@ public class MagicCardClassificationThoemel {
 
 		log.info("Build model....");
 
-		MultiLayerNetwork network = lenetModel();
-		// MultiLayerNetwork network = alexnetModel();
+		
+		MultiLayerNetwork network;
+		ImageRecordReader recordReader;
+		switch (algo) {
+		case DNN:
+			network = nullAchtFuenfzehn();
+			recordReader = new FlatteningImageRecordReader(height, width, channels, labelMaker);
+			break;
+		case LENET:
+			network = lenetModel();
+			recordReader = new ImageRecordReader(height, width, channels, labelMaker);
+			break;
+		case ALEXNET:
+			network = alexnetModel();
+			recordReader = new ImageRecordReader(height, width, channels, labelMaker);
+			break;
+		default:
+			throw new IllegalArgumentException("No algo chosen");
+		}
+		
+		
 
 		network.init();
 		network.setListeners(new ScoreIterationListener(listenerFreq), new PerformanceListener(10));
@@ -151,7 +170,6 @@ public class MagicCardClassificationThoemel {
 		 * MultipleEpochsIterator to ensure model runs through the data for all
 		 * epochs
 		 **/
-		ImageRecordReader recordReader = new ImageRecordReader(height, width, channels, labelMaker);
 		DataSetIterator dataIter;
 		MultipleEpochsIterator trainIter;
 
@@ -171,21 +189,25 @@ public class MagicCardClassificationThoemel {
 			network.fit(trainIter);
 
 
-			ImageTransform flipImage1 = new FlipImageTransform(0);
-			ImageTransform flipImage2 = new FlipImageTransform(-1);
-			ImageTransform flipImage3 = new FlipImageTransform(1);
-			ImageTransform equalizeHist = new EqualizeHistTransform();
-			ImageTransform colorTransform = new ColorConversionTransform(new Random(seed), COLOR_BGR2YCrCb);
-			// ImageTransform showImage = new ShowImageTransform("sali", 0);
-			// ImageTransform multi = new MultiImageTransform(colorTransform,
-			// showImage);
-
 			List<ImageTransform> transforms = new ArrayList<>();
-			for (Integer i : new Integer[] { 1, 2, 3, 5, 6, 7 }) {
-				transforms.add(new RotateImageTransform(new Float(i * 45)));
+//			for (int i : new int[] { 1, 2, 3, 5, 6, 7 }) {
+//				transforms.add(new RotateImageTransform(new Float(i * 45)));
+//			}
 
-			}
-			transforms.addAll(Arrays.asList(new ImageTransform[] { flipImage1, flipImage2, flipImage3, equalizeHist, colorTransform }));
+//			for (int i = 1; i < 24; i++) {
+//				transforms.add(new RotateImageTransform(new Float(i * 15)));
+//			}
+
+//			ImageTransform flipImage1 = new FlipImageTransform(0);
+//			ImageTransform flipImage2 = new FlipImageTransform(-1);
+//			ImageTransform flipImage3 = new FlipImageTransform(1);
+//			ImageTransform equalizeHist = new EqualizeHistTransform();
+//			ImageTransform colorTransform = new ColorConversionTransform(new Random(seed), COLOR_BGR2YCrCb);
+//			// ImageTransform showImage = new ShowImageTransform("sali", 0);
+//			// ImageTransform multi = new MultiImageTransform(colorTransform,
+//			// showImage);
+//			
+//			transforms.addAll(Arrays.asList(new ImageTransform[] { flipImage1, flipImage2, flipImage3, equalizeHist, colorTransform }));
 
 			// Train with transformations
 			for (ImageTransform transform : transforms) {
@@ -346,6 +368,44 @@ public class MagicCardClassificationThoemel {
 		return new MultiLayerNetwork(conf);
 
 	}
+	
+	
+	private MultiLayerNetwork nullAchtFuenfzehn() {
+		int nIn = 30000;
+		int hiddenNodes = 500;
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+				.seed(42)
+				.iterations(iterations)
+//				.activation(Activation.RELU)
+				.activation(Activation.TANH)
+				.weightInit(WeightInit.XAVIER)
+				.learningRate(0.001)
+                .regularization(true).l2(1e-4)
+//				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+//				.updater(Updater.NESTEROVS)
+//				.momentum(0.9)
+				.list()
+				.layer(0, new DenseLayer.Builder()
+						.nIn(nIn)
+						.nOut(hiddenNodes)
+//						.weightInit(WeightInit.XAVIER)
+//						.activation(Activation.RELU)
+						.build())
+                .layer(1, new DenseLayer.Builder().nIn(hiddenNodes).nOut(hiddenNodes).build())
+				.layer(2, new OutputLayer.Builder()
+						.nIn(hiddenNodes)
+						.nOut(numLabels)
+						.lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+						.activation(Activation.SOFTMAX)
+//						.weightInit(WeightInit.XAVIER)
+						.build())
+                .backprop(true).pretrain(false)
+				.build();
+		
+		return new MultiLayerNetwork(conf);
+
+	}
+
 
 	public static void main(String[] args) throws Exception {
 		new MagicCardClassificationThoemel().run(args);
@@ -391,4 +451,42 @@ public class MagicCardClassificationThoemel {
 			return filePath.substring(0, splitPoint) + info + filePath.substring(splitPoint);
 		}
 	}
+
+
+	private class FlatteningImageRecordReader extends ImageRecordReader {
+		
+	    public FlatteningImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator) {
+	        super(height, width, channels, labelGenerator);
+	    }
+
+		  @Override
+		    public List<Writable> next() {
+		        if (iter != null) {
+		            List<Writable> ret;
+		            File image = iter.next();
+		            currentFile = image;
+
+		            if (image.isDirectory())
+		                return next();
+		            try {
+		                invokeListeners(image);
+		                INDArray row = imageLoader.asMatrix(image);
+		                INDArray flattenedRow = Nd4j.toFlattened('c', row.getRow(0));
+		                ret = RecordConverter.toRecord(flattenedRow);
+		                if (appendLabel)
+		                    ret.add(new IntWritable(labels.indexOf(getLabel(image.getPath()))));
+		            } catch (Exception e) {
+		                throw new RuntimeException(e);
+		            }
+		            return ret;
+		        } else if (record != null) {
+		            hitImage = true;
+		            invokeListeners(record);
+		            return record;
+		        }
+		        throw new IllegalStateException("No more elements");
+		    }
+
+	}
+	
 }
