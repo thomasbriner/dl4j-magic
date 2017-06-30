@@ -1,13 +1,17 @@
 package ch.ergon.ml.magic;
+
 import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2YCrCb;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import org.apache.commons.io.FilenameUtils;
@@ -25,6 +29,7 @@ import org.datavec.image.transform.WarpImageTransform;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
@@ -53,6 +58,8 @@ import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import lombok.NonNull;
 
 /**
  * Animal Classification
@@ -87,7 +94,8 @@ public class MagicCardClassificationThoemel {
 	protected static int epochs = 5;
 	protected static double splitTrainTest = 0.8;
 	protected static int nCores = 2;
-	protected static boolean save = true;
+	protected static boolean persistFinalModel = true;
+	protected static boolean persistIntermediateModels = false;
 
 	public void run(String[] args) throws Exception {
 
@@ -100,6 +108,12 @@ public class MagicCardClassificationThoemel {
 		 **/
 		ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
 		File mainPath = new File(System.getProperty("user.dir"), "src/main/resources/magic_cards/");
+		
+		String modelBasePath = FilenameUtils.concat(mainPath.getAbsolutePath(), "models/");
+		new File(modelBasePath).mkdirs();
+		File storedModel = new File(modelBasePath + "magic-model.zip");
+
+		
 		// FileSplit fileSplit = new FileSplit(mainPath,
 		// NativeImageLoader.ALLOWED_FORMATS, rng);
 		// BalancedPathFilter pathFilter = new BalancedPathFilter(rng,
@@ -110,13 +124,13 @@ public class MagicCardClassificationThoemel {
 		 * split
 		 **/
 		nCores = 4;
-		epochs = 100;
+		epochs = 3;
 		// InputSplit[] inputSplit = fileSplit.sample(pathFilter,
 		// splitTrainTest, 1 - splitTrainTest);
 		// InputSplit trainData = inputSplit[0];
 		// InputSplit testData = inputSplit[1];
 		//
-//		numLabels = 13;
+		// numLabels = 13;
 		numLabels = 3586;
 		// fileSplit = new FileSplit(new File(mainPath, "train"),
 		// NativeImageLoader.ALLOWED_FORMATS);
@@ -129,8 +143,8 @@ public class MagicCardClassificationThoemel {
 		 **/
 		// ImageTransform resizeTransform = new ResizeImageTransform(height,
 		// width);
-		
-//		ImageTransform multi = new MultiImageTransform( showImage);
+
+		// ImageTransform multi = new MultiImageTransform( showImage);
 
 		/**
 		 * Data Setup -> normalization - how to normalize images and generate
@@ -158,61 +172,58 @@ public class MagicCardClassificationThoemel {
 		DataSetIterator dataIter;
 		MultipleEpochsIterator trainIter;
 
-		String basePath = FilenameUtils.concat(System.getProperty("user.dir"), "src/main/resources/");
-		File storedModel = new File(basePath + "model.bin");
 
 		// Train without transformations
 		recordReader.initialize(trainData);
 		dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
 
-
-		
 		// scaler.fit(dataIter);
 		dataIter.setPreProcessor(scaler);
-		trainIter = new MultipleEpochsIterator(epochs, dataIter, nCores);
 		if (storedModel.exists()) {
+			trainIter = new MultipleEpochsIterator(epochs, dataIter, nCores);
 			log.info("Load model from file ....");
 			network = loadFromFile(storedModel);
 		} else {
+			trainIter = createMultipleEpochsIterator(storedModel, network, dataIter);
 			log.info("Train model....");
 			network.fit(trainIter);
 
-	        ImageTransform flipTransform1 = new FlipImageTransform(rng);
-	        ImageTransform flipTransform2 = new FlipImageTransform(new Random(123));
-	        ImageTransform warpTransform = new WarpImageTransform(rng, 42);
-	        ImageTransform colorTransform = new ColorConversionTransform(new Random(seed), COLOR_BGR2YCrCb);
+			ImageTransform flipTransform1 = new FlipImageTransform(rng);
+			ImageTransform flipTransform2 = new FlipImageTransform(new Random(123));
+			ImageTransform warpTransform = new WarpImageTransform(rng, 42);
+			ImageTransform colorTransform = new ColorConversionTransform(new Random(seed), COLOR_BGR2YCrCb);
 
-//			ImageTransform showImage = new ShowImageTransform("sali", 0);
+			// ImageTransform showImage = new ShowImageTransform("sali", 0);
 			ImageTransform flipImage1 = new FlipImageTransform(0);
 			ImageTransform flipImage2 = new FlipImageTransform(-1);
 			ImageTransform flipImage3 = new FlipImageTransform(1);
 			ImageTransform equalizeHist = new EqualizeHistTransform();
-//			ImageTransform colorTransform = new ColorConversionTransform(new Random(seed), 50);
-//			ImageTransform multi = new MultiImageTransform(equalizeHist, showImage);
-			
-			
+			// ImageTransform colorTransform = new ColorConversionTransform(new
+			// Random(seed), 50);
+			// ImageTransform multi = new MultiImageTransform(equalizeHist,
+			// showImage);
+
 			List<ImageTransform> transforms = new ArrayList<>();
-			for (Integer i : new Integer[]{1,2,3,5,6,7}) {
-				transforms.add(new RotateImageTransform(new Float(i*45)));
-				
+			for (Integer i : new Integer[] { 1, 2, 3, 5, 6, 7 }) {
+				transforms.add(new RotateImageTransform(new Float(i * 45)));
+
 			}
-			transforms.addAll(Arrays.asList(new ImageTransform[]{flipImage1, flipImage2, flipImage3, equalizeHist}));
+			transforms.addAll(Arrays.asList(new ImageTransform[] { flipImage1, flipImage2, flipImage3, equalizeHist }));
 
-	        // Train with transformations
-	        for (ImageTransform transform : transforms) {
-	            System.out.print("\nTraining on transformation: " + transform.getClass().toString() + "\n\n");
-	            recordReader.initialize(trainData, transform);
-	            dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
-	            scaler.fit(dataIter);
-	            dataIter.setPreProcessor(scaler);
-	            trainIter = new MultipleEpochsIterator(epochs, dataIter, nCores);
-	            network.fit(trainIter);
-	        }
+			// Train with transformations
+			for (ImageTransform transform : transforms) {
+				System.out.print("\nTraining on transformation: " + transform.getClass().toString() + "\n\n");
+				recordReader.initialize(trainData, transform);
+				dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
+				scaler.fit(dataIter);
+				dataIter.setPreProcessor(scaler);
+				trainIter = createMultipleEpochsIterator(storedModel, network, dataIter, transform.getClass().getSimpleName().toString() );
+				network.fit(trainIter);
+			}
 
-			
-			if (save) {
+			if (persistFinalModel) {
 				log.info("Save model....");
-				ModelSerializer.writeModel(network, basePath + "model.bin", true);
+				ModelSerializer.writeModel(network, storedModel, true);
 			}
 		}
 
@@ -240,6 +251,23 @@ public class MagicCardClassificationThoemel {
 			}
 		}
 
+	}
+
+	private MultipleEpochsIterator createMultipleEpochsIterator(File storedModel, MultiLayerNetwork network,
+			DataSetIterator dataIter) {
+		return createMultipleEpochsIterator(storedModel, network, dataIter, null);
+	}
+
+	private MultipleEpochsIterator createMultipleEpochsIterator(File storedModel, MultiLayerNetwork network,
+			DataSetIterator dataIter, String transformationInfo) {
+		MultipleEpochsIterator trainIter;
+		if (persistIntermediateModels) {
+			trainIter = new MultipleEpochsModelSavingIterator(epochs, dataIter, nCores, network,
+					storedModel.getAbsolutePath(), Optional.ofNullable(transformationInfo));
+		} else {
+			trainIter = new MultipleEpochsIterator(epochs,  dataIter, nCores);
+		}
+		return trainIter;
 	}
 
 	private MultiLayerNetwork loadFromFile(File storedModel) throws IOException {
@@ -345,4 +373,44 @@ public class MagicCardClassificationThoemel {
 		new MagicCardClassificationThoemel().run(args);
 	}
 
+	private class MultipleEpochsModelSavingIterator extends MultipleEpochsIterator {
+
+		private static final long serialVersionUID = 1L;
+		private String rawFilePath;
+		private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss.SSS");
+		private Model model;
+		private Optional<String> tag;
+
+		public MultipleEpochsModelSavingIterator(int numEpochs, DataSetIterator iter, int queueSize,
+				@NonNull Model model, @NonNull String filePath, Optional<String> tag) {
+			super(numEpochs, iter, queueSize);
+			this.model = model;
+			this.rawFilePath = filePath;
+			this.tag = tag;
+		}
+
+		@Override
+		public void trackEpochs() {
+			super.trackEpochs();
+			saveModel();
+		}
+
+		private void saveModel() {
+			String filenameWithAdditionalInfo= addInfoToFilePath(rawFilePath, "_epoch_" + epochs + "_");
+			filenameWithAdditionalInfo = addInfoToFilePath(filenameWithAdditionalInfo,  (tag.isPresent() ? tag.get() : "base")+"_");
+			filenameWithAdditionalInfo = addInfoToFilePath(filenameWithAdditionalInfo, dateFormat.format(new Date()));
+			try {
+				ModelSerializer.writeModel(model, filenameWithAdditionalInfo, true);
+				log.info("Model saved to file " + filenameWithAdditionalInfo + " for epoch " + epochs);
+			} catch (IOException e) {
+				log.warn("Could not write model to path " + filenameWithAdditionalInfo + ": " + e.getMessage());
+			}
+
+		}
+
+		private String addInfoToFilePath(String filePath, String info) {
+			int splitPoint = FilenameUtils.indexOfExtension(filePath);
+			return filePath.substring(0, splitPoint) + info + filePath.substring(splitPoint);
+		}
+	}
 }
