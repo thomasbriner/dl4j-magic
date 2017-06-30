@@ -80,6 +80,8 @@ import lombok.NonNull;
 
 public class MagicCardClassificationThoemel {
 	protected static final Logger log = LoggerFactory.getLogger(MagicCardClassificationThoemel.class);
+	private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss.SSS");
+
 	protected static int height = 100;
 	protected static int width = 100;
 	protected static int channels = 3;
@@ -95,7 +97,7 @@ public class MagicCardClassificationThoemel {
 	protected static double splitTrainTest = 0.8;
 	protected static int nCores = 2;
 	protected static boolean persistFinalModel = true;
-	protected static boolean persistIntermediateModels = false;
+	protected static boolean persistIntermediateModels = true;
 
 	public void run(String[] args) throws Exception {
 
@@ -108,12 +110,12 @@ public class MagicCardClassificationThoemel {
 		 **/
 		ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
 		File mainPath = new File(System.getProperty("user.dir"), "src/main/resources/magic_cards/");
-		
-		String modelBasePath = FilenameUtils.concat(mainPath.getAbsolutePath(), "models/");
+
+		String modelBasePath = FilenameUtils.concat(mainPath.getAbsolutePath(),
+				"models/" + dateFormat.format(new Date()) + "/");
 		new File(modelBasePath).mkdirs();
 		File storedModel = new File(modelBasePath + "magic-model.zip");
 
-		
 		// FileSplit fileSplit = new FileSplit(mainPath,
 		// NativeImageLoader.ALLOWED_FORMATS, rng);
 		// BalancedPathFilter pathFilter = new BalancedPathFilter(rng,
@@ -172,7 +174,6 @@ public class MagicCardClassificationThoemel {
 		DataSetIterator dataIter;
 		MultipleEpochsIterator trainIter;
 
-
 		// Train without transformations
 		recordReader.initialize(trainData);
 		dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
@@ -217,7 +218,8 @@ public class MagicCardClassificationThoemel {
 				dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, numLabels);
 				scaler.fit(dataIter);
 				dataIter.setPreProcessor(scaler);
-				trainIter = createMultipleEpochsIterator(storedModel, network, dataIter, transform.getClass().getSimpleName().toString() );
+				trainIter = createMultipleEpochsIterator(storedModel, network, dataIter,
+						transform.getClass().getSimpleName().toString());
 				network.fit(trainIter);
 			}
 
@@ -265,7 +267,7 @@ public class MagicCardClassificationThoemel {
 			trainIter = new MultipleEpochsModelSavingIterator(epochs, dataIter, nCores, network,
 					storedModel.getAbsolutePath(), Optional.ofNullable(transformationInfo));
 		} else {
-			trainIter = new MultipleEpochsIterator(epochs,  dataIter, nCores);
+			trainIter = new MultipleEpochsIterator(epochs, dataIter, nCores);
 		}
 		return trainIter;
 	}
@@ -377,7 +379,6 @@ public class MagicCardClassificationThoemel {
 
 		private static final long serialVersionUID = 1L;
 		private String rawFilePath;
-		private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss.SSS");
 		private Model model;
 		private Optional<String> tag;
 
@@ -396,8 +397,9 @@ public class MagicCardClassificationThoemel {
 		}
 
 		private void saveModel() {
-			String filenameWithAdditionalInfo= addInfoToFilePath(rawFilePath, "_epoch_" + epochs + "_");
-			filenameWithAdditionalInfo = addInfoToFilePath(filenameWithAdditionalInfo,  (tag.isPresent() ? tag.get() : "base")+"_");
+			String filenameWithAdditionalInfo = addInfoToFilePath(rawFilePath, "_epoch_" + epochs + "_");
+			filenameWithAdditionalInfo = addInfoToFilePath(filenameWithAdditionalInfo,
+					(tag.isPresent() ? tag.get() : "base") + "_");
 			filenameWithAdditionalInfo = addInfoToFilePath(filenameWithAdditionalInfo, dateFormat.format(new Date()));
 			try {
 				ModelSerializer.writeModel(model, filenameWithAdditionalInfo, true);

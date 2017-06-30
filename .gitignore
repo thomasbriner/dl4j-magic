@@ -1,2 +1,5 @@
 /logs
 /target
+src/main/resources/magic_cards/models/2017*
+src/main/resources/magic_cards/test*
+src/main/resources/magic_cards/train*
