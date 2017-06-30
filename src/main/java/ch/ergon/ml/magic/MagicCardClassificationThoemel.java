@@ -25,7 +25,6 @@ import org.datavec.image.transform.EqualizeHistTransform;
 import org.datavec.image.transform.FlipImageTransform;
 import org.datavec.image.transform.ImageTransform;
 import org.datavec.image.transform.RotateImageTransform;
-import org.datavec.image.transform.WarpImageTransform;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -116,26 +115,15 @@ public class MagicCardClassificationThoemel {
 		new File(modelBasePath).mkdirs();
 		File storedModel = new File(modelBasePath + "magic-model.zip");
 
-		// FileSplit fileSplit = new FileSplit(mainPath,
-		// NativeImageLoader.ALLOWED_FORMATS, rng);
-		// BalancedPathFilter pathFilter = new BalancedPathFilter(rng,
-		// labelMaker, numExamples, numLabels, batchSize);
-
 		/**
 		 * Data Setup -> train test split - inputSplit = define train and test
 		 * split
 		 **/
 		nCores = 4;
 		epochs = 3;
-		// InputSplit[] inputSplit = fileSplit.sample(pathFilter,
-		// splitTrainTest, 1 - splitTrainTest);
-		// InputSplit trainData = inputSplit[0];
-		// InputSplit testData = inputSplit[1];
-		//
+
 		// numLabels = 13;
 		numLabels = 3586;
-		// fileSplit = new FileSplit(new File(mainPath, "train"),
-		// NativeImageLoader.ALLOWED_FORMATS);
 		InputSplit trainData = new FileSplit(new File(mainPath, "train"), NativeImageLoader.ALLOWED_FORMATS, rng);
 		InputSplit testData = new FileSplit(new File(mainPath, "test"), NativeImageLoader.ALLOWED_FORMATS);
 
@@ -143,16 +131,9 @@ public class MagicCardClassificationThoemel {
 		 * Data Setup -> transformation - Transform = how to tranform images and
 		 * generate large dataset to train on
 		 **/
+		DataNormalization scaler = new ImagePreProcessingScaler(0, 128);
 		// ImageTransform resizeTransform = new ResizeImageTransform(height,
 		// width);
-
-		// ImageTransform multi = new MultiImageTransform( showImage);
-
-		/**
-		 * Data Setup -> normalization - how to normalize images and generate
-		 * large dataset to train on
-		 **/
-		DataNormalization scaler = new ImagePreProcessingScaler(0, 128);
 
 		log.info("Build model....");
 
@@ -189,19 +170,14 @@ public class MagicCardClassificationThoemel {
 			log.info("Train model....");
 			network.fit(trainIter);
 
-			ImageTransform flipTransform1 = new FlipImageTransform(rng);
-			ImageTransform flipTransform2 = new FlipImageTransform(new Random(123));
-			ImageTransform warpTransform = new WarpImageTransform(rng, 42);
-			ImageTransform colorTransform = new ColorConversionTransform(new Random(seed), COLOR_BGR2YCrCb);
 
-			// ImageTransform showImage = new ShowImageTransform("sali", 0);
 			ImageTransform flipImage1 = new FlipImageTransform(0);
 			ImageTransform flipImage2 = new FlipImageTransform(-1);
 			ImageTransform flipImage3 = new FlipImageTransform(1);
 			ImageTransform equalizeHist = new EqualizeHistTransform();
-			// ImageTransform colorTransform = new ColorConversionTransform(new
-			// Random(seed), 50);
-			// ImageTransform multi = new MultiImageTransform(equalizeHist,
+			ImageTransform colorTransform = new ColorConversionTransform(new Random(seed), COLOR_BGR2YCrCb);
+			// ImageTransform showImage = new ShowImageTransform("sali", 0);
+			// ImageTransform multi = new MultiImageTransform(colorTransform,
 			// showImage);
 
 			List<ImageTransform> transforms = new ArrayList<>();
@@ -209,7 +185,7 @@ public class MagicCardClassificationThoemel {
 				transforms.add(new RotateImageTransform(new Float(i * 45)));
 
 			}
-			transforms.addAll(Arrays.asList(new ImageTransform[] { flipImage1, flipImage2, flipImage3, equalizeHist }));
+			transforms.addAll(Arrays.asList(new ImageTransform[] { flipImage1, flipImage2, flipImage3, equalizeHist, colorTransform }));
 
 			// Train with transformations
 			for (ImageTransform transform : transforms) {
